@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>帳簿 — 家計簿</title>
+
+<!-- Home screen / PWA support -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f6f1e4">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+<!-- iOS Safari specific -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="帳簿">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;800&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #f6f1e4;
+    --paper-line: #ded4b8;
+    --ink: #2a2724;
+    --ink-soft: #6b6355;
+    --indigo: #2c4a6e;
+    --indigo-soft: #dbe6ee;
+    --beni: #9c3b3b;
+    --beni-soft: #f3dcd7;
+    --gold: #b8912c;
+    --card: #fffdf7;
+    --shadow: rgba(42,39,36,0.12);
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 34px, rgba(42,39,36,0.035) 35px),
+      var(--paper);
+    color: var(--ink);
+    font-family: "Noto Sans JP", sans-serif;
+    min-height: 100vh;
+    padding: calc(32px + env(safe-area-inset-top)) 16px calc(80px + env(safe-area-inset-bottom));
+  }
+  .wrap{ max-width: 640px; margin: 0 auto; }
+
+  /* Header */
+  header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    margin-bottom: 22px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .brand{ display:flex; align-items:baseline; gap:10px; }
+  .brand h1{
+    font-family:"Shippori Mincho", serif;
+    font-weight:800;
+    font-size: 30px;
+    margin:0;
+    letter-spacing: 0.06em;
+  }
+  .brand span{
+    font-size:11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.12em;
+  }
+  .today{
+    font-family:"JetBrains Mono", monospace;
+    font-size:12px;
+    color: var(--ink-soft);
+    text-align:right;
+  }
+  .install-btn{
+    display:block;
+    width:100%;
+    margin-bottom: 18px;
+    padding: 10px;
+    border-radius: 2px;
+    border: 1.5px solid var(--gold);
+    background: #fdf6e3;
+    color: var(--gold);
+    font-family:"Noto Sans JP", sans-serif;
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:0.05em;
+    cursor:pointer;
+  }
+  .install-btn:hover{ background: var(--gold); color:#fff; }
+
+  /* Summary ledger row */
+  .summary{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap:1px;
+    background: var(--ink);
+    border: 1px solid var(--ink);
+    margin-bottom: 24px;
+    border-radius: 2px;
+    overflow:hidden;
+  }
+  .summary .cell{
+    background: var(--card);
+    padding: 14px 12px;
+    text-align:center;
+  }
+  .summary .cell .label{
+    font-size:11px;
+    color: var(--ink-soft);
+    letter-spacing:0.1em;
+    margin-bottom:6px;
+  }
+  .summary .cell .value{
+    font-family:"JetBrains Mono", monospace;
+    font-weight:700;
+    font-size: 18px;
+  }
+  .summary .income .value{ color: var(--indigo); }
+  .summary .expense .value{ color: var(--beni); }
+  .summary .balance .value{ font-size:20px; }
+
+  /* Form card */
+  .entry-card{
+    background: var(--card);
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px var(--shadow);
+    padding: 20px;
+    margin-bottom: 26px;
+    position: relative;
+  }
+  .type-toggle{
+    display:flex;
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .type-toggle button{
+    flex:1;
+    padding: 9px 0;
+    border-radius: 2px;
+    border: 1.5px solid var(--ink);
+    background: transparent;
+    font-family:"Noto Sans JP", sans-serif;
+    font-weight:500;
+    font-size:14px;
+    letter-spacing:0.05em;
+    cursor:pointer;
+    color: var(--ink);
+    transition: all .15s ease;
+  }
+  .type-toggle button.active.expense{ background: var(--beni); border-color: var(--beni); color:#fff; }
+  .type-toggle button.active.income{ background: var(--indigo); border-color: var(--indigo); color:#fff; }
+
+  .field-row{ display:flex; gap:12px; margin-bottom:12px; }
+  .field{ flex:1; display:flex; flex-direction:column; gap:5px; }
+  .field label{
+    font-size:11px;
+    color: var(--ink-soft);
+    letter-spacing:0.08em;
+  }
+  .field input, .field select{
+    font-family:"Noto Sans JP", sans-serif;
+    font-size:14px;
+    padding: 9px 10px;
+    border:1px solid var(--paper-line);
+    border-radius: 2px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .field input:focus, .field select:focus{
+    outline: 2px solid var(--gold);
+    outline-offset: 1px;
+  }
+  .amount-field input{
+    font-family:"JetBrains Mono", monospace;
+    font-size:18px;
+    font-weight:700;
+  }
+  .cat-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .cat-chip{
+    padding: 6px 12px;
+    border-radius: 100px;
+    border: 1.5px solid var(--paper-line);
+    background: var(--paper);
+    font-size: 13px;
+    cursor:pointer;
+    color: var(--ink-soft);
+    transition: all .12s ease;
+    user-select:none;
+  }
+  .cat-chip.selected.expense{ border-color: var(--beni); background: var(--beni-soft); color: var(--beni); font-weight:600; }
+  .cat-chip.selected.income{ border-color: var(--indigo); background: var(--indigo-soft); color: var(--indigo); font-weight:600; }
+
+  .memo-field textarea{
+    width:100%;
+    font-family:"Noto Sans JP", sans-serif;
+    font-size:13px;
+    padding:9px 10px;
+    border:1px solid var(--paper-line);
+    border-radius:2px;
+    background: var(--paper);
+    resize:none;
+    height:36px;
+    color: var(--ink);
+  }
+
+  .submit-row{ display:flex; justify-content:flex-end; margin-top:16px; }
+  .stamp-btn{
+    position: relative;
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    border: 3px solid var(--beni);
+    background: var(--card);
+    color: var(--beni);
+    font-family:"Shippori Mincho", serif;
+    font-weight:800;
+    font-size: 22px;
+    letter-spacing: 0.15em;
+    writing-mode: vertical-rl;
+    cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition: transform .08s ease;
+  }
+  .stamp-btn.income-mode{ border-color: var(--indigo); color: var(--indigo); }
+  .stamp-btn:active{ transform: scale(0.92); }
+  .stamp-btn.stamping{ animation: stampDown .35s ease; }
+  @keyframes stampDown{
+    0%{ transform: translateY(-10px) scale(1.1); opacity:0.6; }
+    50%{ transform: translateY(2px) scale(0.96); }
+    100%{ transform: translateY(0) scale(1); }
+  }
+
+  /* Ledger list */
+  .ledger-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .ledger-header h2{
+    font-family:"Shippori Mincho", serif;
+    font-size:18px;
+    font-weight:600;
+    margin:0;
+    white-space:nowrap;
+  }
+  .ledger-header .rule{ flex:1; height:1px; background: var(--paper-line); }
+
+  .day-group{ margin-bottom: 18px; }
+  .day-label{
+    font-family:"JetBrains Mono", monospace;
+    font-size:12px;
+    color: var(--ink-soft);
+    margin-bottom:6px;
+    padding-left:2px;
+  }
+  .entry-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background: var(--card);
+    border: 1px solid var(--paper-line);
+    border-left: 4px solid var(--paper-line);
+    border-radius: 2px;
+    padding: 10px 12px;
+    margin-bottom:6px;
+  }
+  .entry-row.expense{ border-left-color: var(--beni); }
+  .entry-row.income{ border-left-color: var(--indigo); }
+  .entry-cat{
+    font-size:12px;
+    padding: 3px 9px;
+    border-radius: 100px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .entry-row.expense .entry-cat{ background: var(--beni-soft); color: var(--beni); }
+  .entry-row.income .entry-cat{ background: var(--indigo-soft); color: var(--indigo); }
+  .entry-memo{
+    flex:1;
+    font-size:13px;
+    color: var(--ink-soft);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .entry-amount{
+    font-family:"JetBrains Mono", monospace;
+    font-weight:700;
+    font-size:15px;
+    white-space:nowrap;
+  }
+  .entry-row.expense .entry-amount{ color: var(--beni); }
+  .entry-row.income .entry-amount{ color: var(--indigo); }
+  .entry-del{
+    background:none; border:none; color: var(--ink-soft);
+    font-size:16px; cursor:pointer; padding:2px 4px; line-height:1;
+    opacity:0.5;
+  }
+  .entry-del:hover{ opacity:1; color: var(--beni); }
+
+  .empty-state{
+    text-align:center;
+    padding: 40px 20px;
+    color: var(--ink-soft);
+    font-size:13px;
+    border: 1px dashed var(--paper-line);
+    border-radius:4px;
+  }
+  .empty-state .mark{
+    font-family:"Shippori Mincho", serif;
+    font-size:26px;
+    color: var(--paper-line);
+    margin-bottom:8px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .stamp-btn.stamping{ animation:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>帳簿</h1>
+      <span>KAKEIBO LEDGER</span>
+    </div>
+    <div class="today" id="todayLabel"></div>
+  </header>
+
+  <button type="button" id="installBtn" class="install-btn" hidden>ホーム画面に追加</button>
+
+  <div class="summary">
+    <div class="cell income">
+      <div class="label">今月の収入</div>
+      <div class="value" id="sumIncome">¥0</div>
+    </div>
+    <div class="cell expense">
+      <div class="label">今月の支出</div>
+      <div class="value" id="sumExpense">¥0</div>
+    </div>
+    <div class="cell balance">
+      <div class="label">残高</div>
+      <div class="value" id="sumBalance">¥0</div>
+    </div>
+  </div>
+
+  <div class="entry-card">
+    <div class="type-toggle">
+      <button type="button" id="btnExpense" class="active expense">支出</button>
+      <button type="button" id="btnIncome" class="income">収入</button>
+    </div>
+
+    <div class="field-row">
+      <div class="field amount-field">
+        <label>金額 (円)</label>
+        <input type="number" id="amountInput" placeholder="0" min="0" inputmode="numeric">
+      </div>
+      <div class="field" style="max-width:150px;">
+        <label>日付</label>
+        <input type="date" id="dateInput">
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:10px;">
+      <label>カテゴリー</label>
+    </div>
+    <div class="cat-grid" id="catGrid"></div>
+
+    <div class="field memo-field" style="margin-bottom:0;">
+      <label>メモ（任意）</label>
+      <textarea id="memoInput" placeholder="例：スーパーで食材"></textarea>
+    </div>
+
+    <div class="submit-row">
+      <button type="button" class="stamp-btn" id="submitBtn">記帳</button>
+    </div>
+  </div>
+
+  <div class="ledger-header">
+    <h2>記録</h2>
+    <div class="rule"></div>
+  </div>
+
+  <div id="ledgerList"></div>
+
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'kakeibo_ledger_v1';
+
+  const CATEGORIES = {
+    expense: ['食費','日用品','交通費','住居','光熱費','通信費','娯楽','医療','衣服','その他'],
+    income: ['給与','副業','賞与','お小遣い','その他']
+  };
+
+  let state = {
+    type: 'expense',
+    category: CATEGORIES.expense[0],
+    entries: []
+  };
+
+  function loadEntries(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      state.entries = raw ? JSON.parse(raw) : [];
+    }catch(e){
+      state.entries = [];
+    }
+  }
+  function saveEntries(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
+    }catch(e){ /* storage unavailable */ }
+  }
+
+  function fmtYen(n){
+    return '¥' + Math.round(n).toLocaleString('ja-JP');
+  }
+  function todayISO(){
+    const d = new Date();
+    const tz = d.getTimezoneOffset() * 60000;
+    return new Date(d - tz).toISOString().slice(0,10);
+  }
+  function fmtDateLabel(iso){
+    const d = new Date(iso + 'T00:00:00');
+    const days = ['日','月','火','水','木','金','土'];
+    return `${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+  }
+
+  const dateInput = document.getElementById('dateInput');
+  dateInput.value = todayISO();
+  document.getElementById('todayLabel').textContent = fmtDateLabel(todayISO()).replace('（',' (').replace('）',')');
+
+  const btnExpense = document.getElementById('btnExpense');
+  const btnIncome = document.getElementById('btnIncome');
+  const catGrid = document.getElementById('catGrid');
+  const submitBtn = document.getElementById('submitBtn');
+  const amountInput = document.getElementById('amountInput');
+  const memoInput = document.getElementById('memoInput');
+
+  function renderCategories(){
+    catGrid.innerHTML = '';
+    CATEGORIES[state.type].forEach(cat => {
+      const chip = document.createElement('div');
+      chip.className = 'cat-chip' + (cat === state.category ? ' selected ' + state.type : '');
+      chip.textContent = cat;
+      chip.addEventListener('click', () => {
+        state.category = cat;
+        renderCategories();
+      });
+      catGrid.appendChild(chip);
+    });
+  }
+
+  function setType(type){
+    state.type = type;
+    state.category = CATEGORIES[type][0];
+    if(type === 'expense'){
+      btnExpense.classList.add('active');
+      btnIncome.classList.remove('active');
+      submitBtn.classList.remove('income-mode');
+      submitBtn.textContent = '記帳';
+    }else{
+      btnIncome.classList.add('active');
+      btnExpense.classList.remove('active');
+      submitBtn.classList.add('income-mode');
+      submitBtn.textContent = '記帳';
+    }
+    renderCategories();
+  }
+  btnExpense.addEventListener('click', () => setType('expense'));
+  btnIncome.addEventListener('click', () => setType('income'));
+
+  function renderSummary(){
+    const now = new Date();
+    const ym = now.toISOString().slice(0,7);
+    let income = 0, expense = 0;
+    state.entries.forEach(e => {
+      if(e.date.slice(0,7) === ym){
+        if(e.type === 'income') income += e.amount;
+        else expense += e.amount;
+      }
+    });
+    document.getElementById('sumIncome').textContent = fmtYen(income);
+    document.getElementById('sumExpense').textContent = fmtYen(expense);
+    document.getElementById('sumBalance').textContent = fmtYen(income - expense);
+  }
+
+  function renderLedger(){
+    const list = document.getElementById('ledgerList');
+    list.innerHTML = '';
+    if(state.entries.length === 0){
+      list.innerHTML = `<div class="empty-state"><div class="mark">白</div>まだ記録がありません。<br>最初の一行を記帳しましょう。</div>`;
+      return;
+    }
+    const sorted = [...state.entries].sort((a,b) => {
+      if(a.date !== b.date) return b.date.localeCompare(a.date);
+      return b.createdAt - a.createdAt;
+    });
+    const groups = {};
+    sorted.forEach(e => {
+      if(!groups[e.date]) groups[e.date] = [];
+      groups[e.date].push(e);
+    });
+    Object.keys(groups).forEach(date => {
+      const dayDiv = document.createElement('div');
+      dayDiv.className = 'day-group';
+      const label = document.createElement('div');
+      label.className = 'day-label';
+      label.textContent = fmtDateLabel(date);
+      dayDiv.appendChild(label);
+      groups[date].forEach(e => {
+        const row = document.createElement('div');
+        row.className = 'entry-row ' + e.type;
+        row.innerHTML = `
+          <span class="entry-cat">${e.category}</span>
+          <span class="entry-memo">${e.memo ? e.memo.replace(/</g,'&lt;') : ''}</span>
+          <span class="entry-amount">${e.type === 'income' ? '+' : '-'}${fmtYen(e.amount)}</span>
+          <button class="entry-del" title="削除" data-id="${e.id}">×</button>
+        `;
+        dayDiv.appendChild(row);
+      });
+      list.appendChild(dayDiv);
+    });
+
+    list.querySelectorAll('.entry-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        state.entries = state.entries.filter(e => String(e.id) !== id);
+        saveEntries();
+        renderLedger();
+        renderSummary();
+      });
+    });
+  }
+
+  submitBtn.addEventListener('click', () => {
+    const amount = parseFloat(amountInput.value);
+    if(!amount || amount <= 0){
+      amountInput.focus();
+      amountInput.style.outline = '2px solid var(--beni)';
+      setTimeout(() => amountInput.style.outline = '', 600);
+      return;
+    }
+    const entry = {
+      id: Date.now(),
+      createdAt: Date.now(),
+      type: state.type,
+      category: state.category,
+      amount: amount,
+      date: dateInput.value || todayISO(),
+      memo: memoInput.value.trim()
+    };
+    state.entries.push(entry);
+    saveEntries();
+
+    submitBtn.classList.add('stamping');
+    setTimeout(() => submitBtn.classList.remove('stamping'), 350);
+
+    amountInput.value = '';
+    memoInput.value = '';
+    amountInput.focus();
+
+    renderLedger();
+    renderSummary();
+  });
+
+  amountInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') submitBtn.click();
+  });
+
+  loadEntries();
+  setType('expense');
+  renderLedger();
+  renderSummary();
+
+  // Register service worker for offline use + installability
+  if ('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js').catch(() => {
+        /* served over file:// or unsupported — app still works, just not offline/installable */
+      });
+    });
+  }
+
+  // Android/Chrome native install prompt
+  const installBtn = document.getElementById('installBtn');
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.hidden = false;
+  });
+  installBtn.addEventListener('click', async () => {
+    if(!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    installBtn.hidden = true;
+  });
+  window.addEventListener('appinstalled', () => {
+    installBtn.hidden = true;
+  });
+})();
+</script>
+</body>
+</html>
