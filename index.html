@@ -90,6 +90,165 @@
   }
   .install-btn:hover{ background: var(--gold); color:#fff; }
 
+  /* Month selector */
+  .month-select-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom: 14px;
+  }
+  .month-select-row label{
+    font-size:11px;
+    color: var(--ink-soft);
+    letter-spacing:0.08em;
+    white-space:nowrap;
+  }
+  .month-select-row select{
+    flex:1;
+    font-family:"JetBrains Mono", monospace;
+    font-size:14px;
+    font-weight:700;
+    padding: 8px 10px;
+    border: 1.5px solid var(--ink);
+    border-radius: 2px;
+    background: var(--card);
+    color: var(--ink);
+  }
+
+  /* Category breakdown */
+  .breakdown-card{
+    background: var(--card);
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px var(--shadow);
+    padding: 18px;
+    margin-bottom: 26px;
+  }
+  .type-toggle.small{ margin-bottom: 14px; }
+  .type-toggle.small button{ padding: 6px 0; font-size: 12px; }
+  .cat-bar-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom: 10px;
+  }
+  .cat-bar-row:last-child{ margin-bottom: 0; }
+  .cat-bar-name{
+    width: 68px;
+    flex-shrink:0;
+    font-size:13px;
+    color: var(--ink);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .cat-bar-track{
+    flex:1;
+    height: 14px;
+    background: var(--paper);
+    border-radius: 2px;
+    overflow:hidden;
+    border: 1px solid var(--paper-line);
+  }
+  .cat-bar-fill{
+    height:100%;
+    border-radius: 1px;
+  }
+  .cat-bar-fill.expense{ background: var(--beni); }
+  .cat-bar-fill.income{ background: var(--indigo); }
+  .cat-bar-amount{
+    width: 92px;
+    flex-shrink:0;
+    text-align:right;
+    font-family:"JetBrains Mono", monospace;
+    font-size:13px;
+    font-weight:600;
+  }
+  .cat-bar-pct{
+    width: 40px;
+    flex-shrink:0;
+    text-align:right;
+    font-family:"JetBrains Mono", monospace;
+    font-size:11px;
+    color: var(--ink-soft);
+  }
+
+  /* Month grouping in ledger */
+  .month-group{ margin-bottom: 26px; }
+  .month-header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 8px 12px;
+    border-radius: 2px;
+    margin-bottom: 10px;
+  }
+  .month-header .month-title{
+    font-family:"Shippori Mincho", serif;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:0.05em;
+  }
+  .month-header .month-totals{
+    font-family:"JetBrains Mono", monospace;
+    font-size:11px;
+    display:flex;
+    gap:10px;
+  }
+  .month-header .month-totals .mi{ color:#9fc3e0; }
+  .month-header .month-totals .me{ color:#e2a3a3; }
+
+  /* Backup */
+  .backup-card{
+    background: var(--card);
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px var(--shadow);
+    padding: 18px;
+    margin-bottom: 26px;
+  }
+  .backup-note{
+    font-size:12px;
+    color: var(--ink-soft);
+    line-height:1.6;
+    margin: 0 0 14px;
+  }
+  .backup-actions{
+    display:flex;
+    gap:10px;
+  }
+  .backup-btn{
+    flex:1;
+    padding: 11px 0;
+    border-radius: 2px;
+    font-family:"Noto Sans JP", sans-serif;
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:0.03em;
+    cursor:pointer;
+  }
+  .backup-btn.export{
+    border: 1.5px solid var(--indigo);
+    background: var(--indigo-soft);
+    color: var(--indigo);
+  }
+  .backup-btn.export:hover{ background: var(--indigo); color:#fff; }
+  .backup-btn.import{
+    border: 1.5px solid var(--ink-soft);
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .backup-btn.import:hover{ border-color: var(--ink); }
+  .backup-status{
+    font-size:12px;
+    margin: 12px 0 0;
+    min-height: 16px;
+    color: var(--indigo);
+  }
+  .backup-status.error{ color: var(--beni); }
+
   /* Summary ledger row */
   .summary{
     display:grid;
@@ -339,13 +498,18 @@
 
   <button type="button" id="installBtn" class="install-btn" hidden>ホーム画面に追加</button>
 
+  <div class="month-select-row">
+    <label for="monthSelect">表示する月</label>
+    <select id="monthSelect"></select>
+  </div>
+
   <div class="summary">
     <div class="cell income">
-      <div class="label">今月の収入</div>
+      <div class="label" id="labelIncome">収入</div>
       <div class="value" id="sumIncome">¥0</div>
     </div>
     <div class="cell expense">
-      <div class="label">今月の支出</div>
+      <div class="label" id="labelExpense">支出</div>
       <div class="value" id="sumExpense">¥0</div>
     </div>
     <div class="cell balance">
@@ -387,11 +551,39 @@
   </div>
 
   <div class="ledger-header">
+    <h2>カテゴリー別</h2>
+    <div class="rule"></div>
+  </div>
+
+  <div class="breakdown-card">
+    <div class="type-toggle small">
+      <button type="button" id="btnBreakdownExpense" class="active expense">支出</button>
+      <button type="button" id="btnBreakdownIncome" class="income">収入</button>
+    </div>
+    <div id="catBreakdown"></div>
+  </div>
+
+  <div class="ledger-header">
     <h2>記録</h2>
     <div class="rule"></div>
   </div>
 
   <div id="ledgerList"></div>
+
+  <div class="ledger-header">
+    <h2>バックアップ</h2>
+    <div class="rule"></div>
+  </div>
+
+  <div class="backup-card">
+    <p class="backup-note">データはこの端末のブラウザ内にのみ保存されています。機種変更やブラウザの初期化に備えて、定期的にバックアップの保存をおすすめします。</p>
+    <div class="backup-actions">
+      <button type="button" id="exportBtn" class="backup-btn export">バックアップを保存</button>
+      <button type="button" id="importBtn" class="backup-btn import">バックアップから復元</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="backup-status" id="backupStatus"></p>
+  </div>
 
 </div>
 
@@ -407,7 +599,9 @@
   let state = {
     type: 'expense',
     category: CATEGORIES.expense[0],
-    entries: []
+    entries: [],
+    selectedMonth: null,
+    breakdownType: 'expense'
   };
 
   function loadEntries(){
@@ -436,6 +630,13 @@
     const d = new Date(iso + 'T00:00:00');
     const days = ['日','月','火','水','木','金','土'];
     return `${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+  }
+  function fmtMonthLabel(ym){
+    const [y,m] = ym.split('-');
+    return `${y}年${parseInt(m,10)}月`;
+  }
+  function currentYm(){
+    return todayISO().slice(0,7);
   }
 
   const dateInput = document.getElementById('dateInput');
@@ -482,9 +683,36 @@
   btnExpense.addEventListener('click', () => setType('expense'));
   btnIncome.addEventListener('click', () => setType('income'));
 
-  function renderSummary(){
-    const now = new Date();
-    const ym = now.toISOString().slice(0,7);
+  const monthSelect = document.getElementById('monthSelect');
+
+  function getAvailableMonths(){
+    const set = new Set(state.entries.map(e => e.date.slice(0,7)));
+    set.add(currentYm());
+    return [...set].sort().reverse();
+  }
+
+  function populateMonthSelect(){
+    const months = getAvailableMonths();
+    const prevValue = state.selectedMonth && months.includes(state.selectedMonth)
+      ? state.selectedMonth
+      : currentYm();
+    monthSelect.innerHTML = '';
+    months.forEach(ym => {
+      const opt = document.createElement('option');
+      opt.value = ym;
+      opt.textContent = fmtMonthLabel(ym);
+      monthSelect.appendChild(opt);
+    });
+    monthSelect.value = prevValue;
+    state.selectedMonth = prevValue;
+  }
+  monthSelect.addEventListener('change', () => {
+    state.selectedMonth = monthSelect.value;
+    renderSummary();
+    renderCategoryBreakdown();
+  });
+
+  function monthTotals(ym){
     let income = 0, expense = 0;
     state.entries.forEach(e => {
       if(e.date.slice(0,7) === ym){
@@ -492,9 +720,67 @@
         else expense += e.amount;
       }
     });
+    return { income, expense };
+  }
+
+  function renderSummary(){
+    const ym = state.selectedMonth || currentYm();
+    const { income, expense } = monthTotals(ym);
+    const isCurrent = ym === currentYm();
+    document.getElementById('labelIncome').textContent = (isCurrent ? '今月' : fmtMonthLabel(ym)) + 'の収入';
+    document.getElementById('labelExpense').textContent = (isCurrent ? '今月' : fmtMonthLabel(ym)) + 'の支出';
     document.getElementById('sumIncome').textContent = fmtYen(income);
     document.getElementById('sumExpense').textContent = fmtYen(expense);
     document.getElementById('sumBalance').textContent = fmtYen(income - expense);
+  }
+
+  const btnBreakdownExpense = document.getElementById('btnBreakdownExpense');
+  const btnBreakdownIncome = document.getElementById('btnBreakdownIncome');
+  btnBreakdownExpense.addEventListener('click', () => {
+    state.breakdownType = 'expense';
+    btnBreakdownExpense.classList.add('active');
+    btnBreakdownIncome.classList.remove('active');
+    renderCategoryBreakdown();
+  });
+  btnBreakdownIncome.addEventListener('click', () => {
+    state.breakdownType = 'income';
+    btnBreakdownIncome.classList.add('active');
+    btnBreakdownExpense.classList.remove('active');
+    renderCategoryBreakdown();
+  });
+
+  function renderCategoryBreakdown(){
+    const container = document.getElementById('catBreakdown');
+    const ym = state.selectedMonth || currentYm();
+    const type = state.breakdownType;
+    const totals = {};
+    let grandTotal = 0;
+    state.entries.forEach(e => {
+      if(e.date.slice(0,7) === ym && e.type === type){
+        totals[e.category] = (totals[e.category] || 0) + e.amount;
+        grandTotal += e.amount;
+      }
+    });
+    const rows = Object.entries(totals).sort((a,b) => b[1] - a[1]);
+    container.innerHTML = '';
+    if(rows.length === 0){
+      container.innerHTML = `<div class="empty-state" style="padding:20px;">この月の${type === 'income' ? '収入' : '支出'}はまだありません。</div>`;
+      return;
+    }
+    const max = rows[0][1];
+    rows.forEach(([cat, amount]) => {
+      const pct = grandTotal ? Math.round((amount / grandTotal) * 100) : 0;
+      const barPct = max ? Math.round((amount / max) * 100) : 0;
+      const row = document.createElement('div');
+      row.className = 'cat-bar-row';
+      row.innerHTML = `
+        <span class="cat-bar-name">${cat}</span>
+        <span class="cat-bar-track"><span class="cat-bar-fill ${type}" style="width:${barPct}%"></span></span>
+        <span class="cat-bar-amount">${fmtYen(amount)}</span>
+        <span class="cat-bar-pct">${pct}%</span>
+      `;
+      container.appendChild(row);
+    });
   }
 
   function renderLedger(){
@@ -508,30 +794,56 @@
       if(a.date !== b.date) return b.date.localeCompare(a.date);
       return b.createdAt - a.createdAt;
     });
-    const groups = {};
+
+    const monthGroups = {};
     sorted.forEach(e => {
-      if(!groups[e.date]) groups[e.date] = [];
-      groups[e.date].push(e);
+      const ym = e.date.slice(0,7);
+      if(!monthGroups[ym]) monthGroups[ym] = [];
+      monthGroups[ym].push(e);
     });
-    Object.keys(groups).forEach(date => {
-      const dayDiv = document.createElement('div');
-      dayDiv.className = 'day-group';
-      const label = document.createElement('div');
-      label.className = 'day-label';
-      label.textContent = fmtDateLabel(date);
-      dayDiv.appendChild(label);
-      groups[date].forEach(e => {
-        const row = document.createElement('div');
-        row.className = 'entry-row ' + e.type;
-        row.innerHTML = `
-          <span class="entry-cat">${e.category}</span>
-          <span class="entry-memo">${e.memo ? e.memo.replace(/</g,'&lt;') : ''}</span>
-          <span class="entry-amount">${e.type === 'income' ? '+' : '-'}${fmtYen(e.amount)}</span>
-          <button class="entry-del" title="削除" data-id="${e.id}">×</button>
-        `;
-        dayDiv.appendChild(row);
+
+    Object.keys(monthGroups).sort().reverse().forEach(ym => {
+      const { income, expense } = monthTotals(ym);
+      const monthDiv = document.createElement('div');
+      monthDiv.className = 'month-group';
+      monthDiv.innerHTML = `
+        <div class="month-header">
+          <span class="month-title">${fmtMonthLabel(ym)}</span>
+          <span class="month-totals">
+            <span class="mi">+${fmtYen(income)}</span>
+            <span class="me">-${fmtYen(expense)}</span>
+          </span>
+        </div>
+      `;
+
+      const dayGroups = {};
+      monthGroups[ym].forEach(e => {
+        if(!dayGroups[e.date]) dayGroups[e.date] = [];
+        dayGroups[e.date].push(e);
       });
-      list.appendChild(dayDiv);
+
+      Object.keys(dayGroups).forEach(date => {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'day-group';
+        const label = document.createElement('div');
+        label.className = 'day-label';
+        label.textContent = fmtDateLabel(date);
+        dayDiv.appendChild(label);
+        dayGroups[date].forEach(e => {
+          const row = document.createElement('div');
+          row.className = 'entry-row ' + e.type;
+          row.innerHTML = `
+            <span class="entry-cat">${e.category}</span>
+            <span class="entry-memo">${e.memo ? e.memo.replace(/</g,'&lt;') : ''}</span>
+            <span class="entry-amount">${e.type === 'income' ? '+' : '-'}${fmtYen(e.amount)}</span>
+            <button class="entry-del" title="削除" data-id="${e.id}">×</button>
+          `;
+          dayDiv.appendChild(row);
+        });
+        monthDiv.appendChild(dayDiv);
+      });
+
+      list.appendChild(monthDiv);
     });
 
     list.querySelectorAll('.entry-del').forEach(btn => {
@@ -539,8 +851,10 @@
         const id = btn.getAttribute('data-id');
         state.entries = state.entries.filter(e => String(e.id) !== id);
         saveEntries();
+        populateMonthSelect();
         renderLedger();
         renderSummary();
+        renderCategoryBreakdown();
       });
     });
   }
@@ -572,18 +886,115 @@
     memoInput.value = '';
     amountInput.focus();
 
+    populateMonthSelect();
     renderLedger();
     renderSummary();
+    renderCategoryBreakdown();
   });
 
   amountInput.addEventListener('keydown', (e) => {
     if(e.key === 'Enter') submitBtn.click();
   });
 
+  // Backup: export / import
+  const exportBtn = document.getElementById('exportBtn');
+  const importBtn = document.getElementById('importBtn');
+  const importFile = document.getElementById('importFile');
+  const backupStatus = document.getElementById('backupStatus');
+
+  function showBackupStatus(msg, isError){
+    backupStatus.textContent = msg;
+    backupStatus.classList.toggle('error', !!isError);
+  }
+
+  exportBtn.addEventListener('click', () => {
+    const payload = {
+      app: 'kakeibo-ledger',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      entries: state.entries
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = todayISO().replace(/-/g, '');
+    a.href = url;
+    a.download = `kakeibo-backup-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showBackupStatus('バックアップファイルを保存しました。', false);
+  });
+
+  importBtn.addEventListener('click', () => importFile.click());
+
+  importFile.addEventListener('change', () => {
+    const file = importFile.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try{
+        data = JSON.parse(reader.result);
+      }catch(e){
+        showBackupStatus('ファイルを読み込めませんでした。正しいバックアップファイルか確認してください。', true);
+        importFile.value = '';
+        return;
+      }
+      const incoming = Array.isArray(data) ? data : data.entries;
+      if(!Array.isArray(incoming)){
+        showBackupStatus('バックアップファイルの形式が正しくありません。', true);
+        importFile.value = '';
+        return;
+      }
+      const valid = incoming.filter(e =>
+        e && typeof e.amount === 'number' &&
+        (e.type === 'income' || e.type === 'expense') &&
+        typeof e.date === 'string' && typeof e.category === 'string'
+      );
+      if(valid.length === 0){
+        showBackupStatus('復元できる記録が見つかりませんでした。', true);
+        importFile.value = '';
+        return;
+      }
+      const existingIds = new Set(state.entries.map(e => e.id));
+      let added = 0;
+      valid.forEach(e => {
+        const id = e.id != null && !existingIds.has(e.id) ? e.id : `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+        existingIds.add(id);
+        state.entries.push({
+          id,
+          createdAt: e.createdAt || Date.now(),
+          type: e.type,
+          category: e.category,
+          amount: e.amount,
+          date: e.date,
+          memo: e.memo || ''
+        });
+        added++;
+      });
+      saveEntries();
+      populateMonthSelect();
+      renderLedger();
+      renderSummary();
+      renderCategoryBreakdown();
+      showBackupStatus(`${added}件の記録を復元しました（既存のデータに追加されました）。`, false);
+      importFile.value = '';
+    };
+    reader.onerror = () => {
+      showBackupStatus('ファイルの読み込みに失敗しました。', true);
+      importFile.value = '';
+    };
+    reader.readAsText(file);
+  });
+
   loadEntries();
   setType('expense');
+  populateMonthSelect();
   renderLedger();
   renderSummary();
+  renderCategoryBreakdown();
 
   // Register service worker for offline use + installability
   if ('serviceWorker' in navigator){
