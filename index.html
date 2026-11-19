@@ -200,6 +200,84 @@
   .month-header .month-totals .mi{ color:#9fc3e0; }
   .month-header .month-totals .me{ color:#e2a3a3; }
 
+  /* Budget */
+  .budget-card{
+    background: var(--card);
+    border: 1px solid var(--paper-line);
+    border-left: 4px solid var(--gold);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px var(--shadow);
+    padding: 16px 18px;
+    margin-bottom: 24px;
+  }
+  .budget-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; }
+  .budget-title{ font-family:"Shippori Mincho", serif; font-weight:600; font-size:15px; }
+  .budget-amount{ font-family:"JetBrains Mono", monospace; font-weight:700; font-size:18px; }
+  .budget-track{
+    height:12px; background: var(--paper); border:1px solid var(--paper-line);
+    border-radius:2px; overflow:hidden; margin-bottom:8px;
+  }
+  .budget-fill{ height:100%; width:0; background: var(--gold); transition: width .3s ease; }
+  .budget-card.warn .budget-fill{ background:#c47a2c; }
+  .budget-card.over{ border-left-color: var(--beni); }
+  .budget-card.over .budget-fill{ background: var(--beni); }
+  .budget-meta{
+    display:flex; justify-content:space-between;
+    font-size:12px; color: var(--ink-soft); margin-bottom:10px;
+  }
+  .budget-meta b{ font-family:"JetBrains Mono", monospace; color: var(--ink); font-size:14px; }
+  .budget-card.over #budgetRemainLabel, .budget-card.over .budget-meta #budgetRemain{ color: var(--beni); }
+  .budget-sub{
+    display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;
+    padding-top:10px; border-top:1px dashed var(--paper-line);
+    font-size:11px; color: var(--ink-soft);
+  }
+  .budget-sub b{ font-family:"JetBrains Mono", monospace; color: var(--ink); font-size:12px; }
+
+  /* Settings */
+  .settings-card{
+    background: var(--card);
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px var(--shadow);
+    padding: 18px;
+    margin-bottom: 26px;
+  }
+  .suggest-btn{
+    width:100%; padding:9px; margin-bottom:18px;
+    border:1.5px solid var(--gold); background:#fdf6e3; color: var(--gold);
+    border-radius:2px; font-family:"Noto Sans JP", sans-serif;
+    font-weight:600; font-size:12px; cursor:pointer;
+  }
+  .suggest-btn:hover{ background: var(--gold); color:#fff; }
+  .fixed-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:"Shippori Mincho", serif; font-weight:600; font-size:14px;
+    padding-top:14px; border-top:1px dashed var(--paper-line); margin-bottom:8px;
+  }
+  .fixed-total{ font-family:"JetBrains Mono", monospace; font-weight:700; color: var(--beni); font-size:14px; }
+  .fixed-row{
+    display:flex; align-items:center; gap:10px;
+    padding:8px 10px; margin-bottom:6px;
+    border:1px solid var(--paper-line); border-left:4px solid var(--beni);
+    background: var(--paper); border-radius:2px;
+  }
+  .fixed-name{ flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .fixed-amount{ font-family:"JetBrains Mono", monospace; font-weight:700; color: var(--beni); font-size:14px; }
+  .fixed-empty{ font-size:12px; color: var(--ink-soft); padding:4px 0 8px; }
+  .fixed-add{ display:flex; gap:8px; margin-top:10px; }
+  .fixed-add input{
+    min-width:0; font-family:"Noto Sans JP", sans-serif; font-size:14px;
+    padding:9px 10px; border:1px solid var(--paper-line); border-radius:2px;
+    background: var(--paper); color: var(--ink);
+  }
+  .fixed-add input.name{ flex:1.4; }
+  .fixed-add input.amt{ flex:1; font-family:"JetBrains Mono", monospace; font-weight:700; }
+  .fixed-add button{
+    padding:0 16px; border:1.5px solid var(--ink); background: var(--ink); color: var(--paper);
+    border-radius:2px; font-family:"Noto Sans JP", sans-serif; font-weight:600; font-size:13px; cursor:pointer;
+  }
+
   /* Backup */
   .backup-card{
     background: var(--card);
@@ -313,13 +391,15 @@
   .type-toggle button.active.income{ background: var(--indigo); border-color: var(--indigo); color:#fff; }
 
   .field-row{ display:flex; gap:12px; margin-bottom:12px; }
-  .field{ flex:1; display:flex; flex-direction:column; gap:5px; }
+  .field{ flex:1; display:flex; flex-direction:column; gap:5px; min-width:0; }
   .field label{
     font-size:11px;
     color: var(--ink-soft);
     letter-spacing:0.08em;
   }
   .field input, .field select{
+    width:100%;
+    min-width:0;
     font-family:"Noto Sans JP", sans-serif;
     font-size:14px;
     padding: 9px 10px;
@@ -513,8 +593,25 @@
       <div class="value" id="sumExpense">¥0</div>
     </div>
     <div class="cell balance">
-      <div class="label">残高</div>
+      <div class="label">残高（貯金後）</div>
       <div class="value" id="sumBalance">¥0</div>
+    </div>
+  </div>
+
+  <div class="budget-card" id="budgetCard">
+    <div class="budget-head">
+      <span class="budget-title">使っていい金額</span>
+      <span class="budget-amount" id="budgetAllowance">未設定</span>
+    </div>
+    <div class="budget-track"><div class="budget-fill" id="budgetFill"></div></div>
+    <div class="budget-meta">
+      <span>使った額 <b id="budgetSpent">¥0</b></span>
+      <span><span id="budgetRemainLabel">残り</span> <b id="budgetRemain">—</b></span>
+    </div>
+    <div class="budget-sub">
+      <span>固定費 <b id="subFixed">¥0</b></span>
+      <span>貯金 <b id="subSavings">¥0</b></span>
+      <span>使える目安 <b id="subSuggest">¥0</b></span>
     </div>
   </div>
 
@@ -529,7 +626,7 @@
         <label>金額 (円)</label>
         <input type="number" id="amountInput" placeholder="0" min="0" inputmode="numeric">
       </div>
-      <div class="field" style="max-width:150px;">
+      <div class="field" style="max-width:160px;">
         <label>日付</label>
         <input type="date" id="dateInput">
       </div>
@@ -571,6 +668,36 @@
   <div id="ledgerList"></div>
 
   <div class="ledger-header">
+    <h2>設定</h2>
+    <div class="rule"></div>
+  </div>
+
+  <div class="settings-card">
+    <div class="field-row">
+      <div class="field">
+        <label>使っていい金額（月・円）</label>
+        <input type="number" id="allowanceInput" placeholder="0" min="0" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>毎月の貯金額（円）</label>
+        <input type="number" id="savingsInput" placeholder="0" min="0" inputmode="numeric">
+      </div>
+    </div>
+    <button type="button" id="applySuggestBtn" class="suggest-btn">「収入 − 固定費 − 貯金」の目安をセット</button>
+
+    <div class="fixed-head">
+      <span>固定費（毎月）</span>
+      <span class="fixed-total" id="fixedTotal">¥0</span>
+    </div>
+    <div id="fixedList"></div>
+    <div class="fixed-add">
+      <input type="text" class="name" id="fixedName" placeholder="例：家賃">
+      <input type="number" class="amt" id="fixedAmount" placeholder="金額" min="0" inputmode="numeric">
+      <button type="button" id="fixedAddBtn">追加</button>
+    </div>
+  </div>
+
+  <div class="ledger-header">
     <h2>バックアップ</h2>
     <div class="rule"></div>
   </div>
@@ -603,6 +730,154 @@
     selectedMonth: null,
     breakdownType: 'expense'
   };
+
+  // ---- Settings: fixed costs / savings / allowance ----
+  const SETTINGS_KEY = 'kakeibo_settings_v1';
+  let settings = { fixedCosts: [], savings: 0, allowance: 0 };
+
+  function normalizeSettings(s){
+    s = s || {};
+    const fixed = Array.isArray(s.fixedCosts)
+      ? s.fixedCosts
+          .filter(f => f && typeof f.name === 'string' && Number(f.amount) > 0)
+          .map((f, i) => ({ id: f.id != null ? f.id : Date.now() + i, name: f.name, amount: Number(f.amount) }))
+      : [];
+    return {
+      fixedCosts: fixed,
+      savings: Math.max(0, Number(s.savings) || 0),
+      allowance: Math.max(0, Number(s.allowance) || 0)
+    };
+  }
+  function loadSettings(){
+    try{
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      settings = normalizeSettings(raw ? JSON.parse(raw) : null);
+    }catch(e){
+      settings = normalizeSettings(null);
+    }
+  }
+  function saveSettings(){
+    try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }catch(e){}
+  }
+  function fixedTotal(){
+    return settings.fixedCosts.reduce((sum, f) => sum + f.amount, 0);
+  }
+  function esc(s){
+    return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+  function refreshMoney(){
+    renderSummary();
+    renderCategoryBreakdown();
+    renderLedger();
+  }
+
+  function renderFixedList(){
+    const list = document.getElementById('fixedList');
+    list.innerHTML = '';
+    if(settings.fixedCosts.length === 0){
+      list.innerHTML = '<div class="fixed-empty">まだ登録されていません（家賃・通信費・サブスクなど）</div>';
+    }
+    settings.fixedCosts.forEach(f => {
+      const row = document.createElement('div');
+      row.className = 'fixed-row';
+      row.innerHTML = `
+        <span class="fixed-name">${esc(f.name)}</span>
+        <span class="fixed-amount">${fmtYen(f.amount)}</span>
+        <button class="entry-del" title="削除" data-fid="${f.id}">×</button>
+      `;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('[data-fid]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-fid');
+        settings.fixedCosts = settings.fixedCosts.filter(f => String(f.id) !== id);
+        saveSettings();
+        renderFixedList();
+        refreshMoney();
+      });
+    });
+    document.getElementById('fixedTotal').textContent = fmtYen(fixedTotal());
+  }
+
+  function renderSettings(){
+    document.getElementById('allowanceInput').value = settings.allowance || '';
+    document.getElementById('savingsInput').value = settings.savings || '';
+    renderFixedList();
+  }
+
+  function renderBudget(income, expense, fixed, savings){
+    const card = document.getElementById('budgetCard');
+    const allowance = settings.allowance;
+    const fill = document.getElementById('budgetFill');
+    document.getElementById('budgetSpent').textContent = fmtYen(expense);
+    document.getElementById('subFixed').textContent = fmtYen(fixed);
+    document.getElementById('subSavings').textContent = fmtYen(savings);
+    document.getElementById('subSuggest').textContent = fmtYen(income - fixed - savings);
+    if(allowance > 0){
+      const remain = allowance - expense;
+      const pct = Math.min(100, Math.round((expense / allowance) * 100));
+      document.getElementById('budgetAllowance').textContent = fmtYen(allowance);
+      fill.style.width = pct + '%';
+      card.classList.toggle('over', remain < 0);
+      card.classList.toggle('warn', remain >= 0 && pct >= 80);
+      document.getElementById('budgetRemainLabel').textContent = remain < 0 ? '超過' : '残り';
+      document.getElementById('budgetRemain').textContent = fmtYen(Math.abs(remain));
+    }else{
+      document.getElementById('budgetAllowance').textContent = '未設定';
+      fill.style.width = '0%';
+      card.classList.remove('over', 'warn');
+      document.getElementById('budgetRemainLabel').textContent = '残り';
+      document.getElementById('budgetRemain').textContent = '—';
+    }
+  }
+
+  (function wireSettings(){
+    const allowanceInput = document.getElementById('allowanceInput');
+    const savingsInput = document.getElementById('savingsInput');
+    const fixedName = document.getElementById('fixedName');
+    const fixedAmount = document.getElementById('fixedAmount');
+
+    allowanceInput.addEventListener('input', () => {
+      settings.allowance = Math.max(0, parseInt(allowanceInput.value, 10) || 0);
+      saveSettings();
+      refreshMoney();
+    });
+    savingsInput.addEventListener('input', () => {
+      settings.savings = Math.max(0, parseInt(savingsInput.value, 10) || 0);
+      saveSettings();
+      refreshMoney();
+    });
+    document.getElementById('applySuggestBtn').addEventListener('click', () => {
+      const ym = state.selectedMonth || currentYm();
+      const t = monthTotals(ym);
+      const suggest = Math.max(0, t.income - t.fixed - t.savings);
+      settings.allowance = suggest;
+      saveSettings();
+      allowanceInput.value = suggest || '';
+      refreshMoney();
+    });
+    function addFixed(){
+      const name = fixedName.value.trim();
+      const amount = parseInt(fixedAmount.value, 10);
+      if(!name || !(amount > 0)){
+        const target = !name ? fixedName : fixedAmount;
+        target.focus();
+        target.style.outline = '2px solid var(--beni)';
+        setTimeout(() => target.style.outline = '', 600);
+        return;
+      }
+      settings.fixedCosts.push({ id: Date.now(), name, amount });
+      saveSettings();
+      fixedName.value = '';
+      fixedAmount.value = '';
+      fixedName.focus();
+      renderFixedList();
+      refreshMoney();
+    }
+    document.getElementById('fixedAddBtn').addEventListener('click', addFixed);
+    fixedAmount.addEventListener('keydown', (e) => { if(e.key === 'Enter') addFixed(); });
+    fixedName.addEventListener('keydown', (e) => { if(e.key === 'Enter') fixedAmount.focus(); });
+  })();
 
   function loadEntries(){
     try{
@@ -720,18 +995,19 @@
         else expense += e.amount;
       }
     });
-    return { income, expense };
+    return { income, expense, fixed: fixedTotal(), savings: settings.savings };
   }
 
   function renderSummary(){
     const ym = state.selectedMonth || currentYm();
-    const { income, expense } = monthTotals(ym);
+    const { income, expense, fixed, savings } = monthTotals(ym);
     const isCurrent = ym === currentYm();
     document.getElementById('labelIncome').textContent = (isCurrent ? '今月' : fmtMonthLabel(ym)) + 'の収入';
-    document.getElementById('labelExpense').textContent = (isCurrent ? '今月' : fmtMonthLabel(ym)) + 'の支出';
+    document.getElementById('labelExpense').textContent = (isCurrent ? '今月' : fmtMonthLabel(ym)) + 'の支出（固定費込み）';
     document.getElementById('sumIncome').textContent = fmtYen(income);
-    document.getElementById('sumExpense').textContent = fmtYen(expense);
-    document.getElementById('sumBalance').textContent = fmtYen(income - expense);
+    document.getElementById('sumExpense').textContent = fmtYen(expense + fixed);
+    document.getElementById('sumBalance').textContent = fmtYen(income - expense - fixed - savings);
+    renderBudget(income, expense, fixed, savings);
   }
 
   const btnBreakdownExpense = document.getElementById('btnBreakdownExpense');
@@ -761,6 +1037,10 @@
         grandTotal += e.amount;
       }
     });
+    if(type === 'expense' && fixedTotal() > 0){
+      totals['固定費'] = (totals['固定費'] || 0) + fixedTotal();
+      grandTotal += fixedTotal();
+    }
     const rows = Object.entries(totals).sort((a,b) => b[1] - a[1]);
     container.innerHTML = '';
     if(rows.length === 0){
@@ -803,7 +1083,7 @@
     });
 
     Object.keys(monthGroups).sort().reverse().forEach(ym => {
-      const { income, expense } = monthTotals(ym);
+      const { income, expense, fixed } = monthTotals(ym);
       const monthDiv = document.createElement('div');
       monthDiv.className = 'month-group';
       monthDiv.innerHTML = `
@@ -811,7 +1091,7 @@
           <span class="month-title">${fmtMonthLabel(ym)}</span>
           <span class="month-totals">
             <span class="mi">+${fmtYen(income)}</span>
-            <span class="me">-${fmtYen(expense)}</span>
+            <span class="me">-${fmtYen(expense + fixed)}</span>
           </span>
         </div>
       `;
@@ -912,7 +1192,8 @@
       app: 'kakeibo-ledger',
       version: 1,
       exportedAt: new Date().toISOString(),
-      entries: state.entries
+      entries: state.entries,
+      settings: settings
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -953,7 +1234,16 @@
         (e.type === 'income' || e.type === 'expense') &&
         typeof e.date === 'string' && typeof e.category === 'string'
       );
-      if(valid.length === 0){
+      let settingsRestored = false;
+      if(data && !Array.isArray(data) && data.settings && typeof data.settings === 'object'){
+        if(confirm('バックアップに含まれる設定（固定費・貯金額・使っていい金額）で、現在の設定を置き換えますか？')){
+          settings = normalizeSettings(data.settings);
+          saveSettings();
+          renderSettings();
+          settingsRestored = true;
+        }
+      }
+      if(valid.length === 0 && !settingsRestored){
         showBackupStatus('復元できる記録が見つかりませんでした。', true);
         importFile.value = '';
         return;
@@ -979,7 +1269,7 @@
       renderLedger();
       renderSummary();
       renderCategoryBreakdown();
-      showBackupStatus(`${added}件の記録を復元しました（既存のデータに追加されました）。`, false);
+      showBackupStatus(`${added}件の記録を復元しました（既存のデータに追加されました）。` + (settingsRestored ? '設定も復元しました。' : ''), false);
       importFile.value = '';
     };
     reader.onerror = () => {
@@ -990,7 +1280,9 @@
   });
 
   loadEntries();
+  loadSettings();
   setType('expense');
+  renderSettings();
   populateMonthSelect();
   renderLedger();
   renderSummary();
