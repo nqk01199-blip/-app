@@ -278,6 +278,32 @@
     border-radius:2px; font-family:"Noto Sans JP", sans-serif; font-weight:600; font-size:13px; cursor:pointer;
   }
 
+  /* Settings toggle */
+  .settings-toggle{
+    width:100%; margin-top:12px; padding:9px;
+    border:1px dashed var(--ink-soft); background:transparent; color: var(--ink);
+    border-radius:2px; font-family:"Noto Sans JP", sans-serif;
+    font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .settings-toggle:hover{ border-color: var(--ink); }
+  .settings-card[hidden]{ display:none; }
+  .settings-title{
+    font-family:"Shippori Mincho", serif; font-weight:600; font-size:14px; margin-bottom:14px;
+  }
+
+  /* Collapsible months */
+  .month-header{ cursor:pointer; user-select:none; flex-wrap:wrap; gap:4px 10px; }
+  .month-header:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  .month-header .chev{ display:inline-block; margin-right:8px; transition: transform .15s ease; }
+  .month-header .month-count{
+    font-family:"JetBrains Mono", monospace; font-size:11px; font-weight:400;
+    opacity:.7; margin-left:8px;
+  }
+  .month-group.collapsed{ margin-bottom: 12px; }
+  .month-group.collapsed .month-header{ margin-bottom:0; }
+  .month-group.collapsed .month-header .chev{ transform: rotate(-90deg); }
+  .month-group.collapsed .day-group{ display:none; }
+
   /* Backup */
   .backup-card{
     background: var(--card);
@@ -613,6 +639,33 @@
       <span>貯金 <b id="subSavings">¥0</b></span>
       <span>使える目安 <b id="subSuggest">¥0</b></span>
     </div>
+    <button type="button" class="settings-toggle" id="settingsToggle" aria-expanded="false">⚙ 固定費・貯金・使っていい金額を設定する ▾</button>
+  </div>
+
+  <div class="settings-card" id="settingsPanel" hidden>
+    <div class="settings-title">毎月の設定（固定費・貯金・使っていい金額）</div>
+    <div class="field-row">
+      <div class="field">
+        <label>使っていい金額（月・円）</label>
+        <input type="number" id="allowanceInput" placeholder="0" min="0" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>毎月の貯金額（円）</label>
+        <input type="number" id="savingsInput" placeholder="0" min="0" inputmode="numeric">
+      </div>
+    </div>
+    <button type="button" id="applySuggestBtn" class="suggest-btn">「収入 − 固定費 − 貯金」の目安をセット</button>
+
+    <div class="fixed-head">
+      <span>固定費（毎月）</span>
+      <span class="fixed-total" id="fixedTotal">¥0</span>
+    </div>
+    <div id="fixedList"></div>
+    <div class="fixed-add">
+      <input type="text" class="name" id="fixedName" placeholder="例：家賃">
+      <input type="number" class="amt" id="fixedAmount" placeholder="金額" min="0" inputmode="numeric">
+      <button type="button" id="fixedAddBtn">追加</button>
+    </div>
   </div>
 
   <div class="entry-card">
@@ -668,36 +721,6 @@
   <div id="ledgerList"></div>
 
   <div class="ledger-header">
-    <h2>設定</h2>
-    <div class="rule"></div>
-  </div>
-
-  <div class="settings-card">
-    <div class="field-row">
-      <div class="field">
-        <label>使っていい金額（月・円）</label>
-        <input type="number" id="allowanceInput" placeholder="0" min="0" inputmode="numeric">
-      </div>
-      <div class="field">
-        <label>毎月の貯金額（円）</label>
-        <input type="number" id="savingsInput" placeholder="0" min="0" inputmode="numeric">
-      </div>
-    </div>
-    <button type="button" id="applySuggestBtn" class="suggest-btn">「収入 − 固定費 − 貯金」の目安をセット</button>
-
-    <div class="fixed-head">
-      <span>固定費（毎月）</span>
-      <span class="fixed-total" id="fixedTotal">¥0</span>
-    </div>
-    <div id="fixedList"></div>
-    <div class="fixed-add">
-      <input type="text" class="name" id="fixedName" placeholder="例：家賃">
-      <input type="number" class="amt" id="fixedAmount" placeholder="金額" min="0" inputmode="numeric">
-      <button type="button" id="fixedAddBtn">追加</button>
-    </div>
-  </div>
-
-  <div class="ledger-header">
     <h2>バックアップ</h2>
     <div class="rule"></div>
   </div>
@@ -730,6 +753,19 @@
     selectedMonth: null,
     breakdownType: 'expense'
   };
+
+  // ---- Collapsed months (per-month, remembered) ----
+  const COLLAPSE_KEY = 'kakeibo_collapsed_v1';
+  let collapsedMonths = new Set();
+  function loadCollapsed(){
+    try{
+      const raw = localStorage.getItem(COLLAPSE_KEY);
+      collapsedMonths = new Set(raw ? JSON.parse(raw) : []);
+    }catch(e){ collapsedMonths = new Set(); }
+  }
+  function saveCollapsed(){
+    try{ localStorage.setItem(COLLAPSE_KEY, JSON.stringify([...collapsedMonths])); }catch(e){}
+  }
 
   // ---- Settings: fixed costs / savings / allowance ----
   const SETTINGS_KEY = 'kakeibo_settings_v1';
@@ -799,6 +835,16 @@
     document.getElementById('fixedTotal').textContent = fmtYen(fixedTotal());
   }
 
+  function setSettingsOpen(open){
+    document.getElementById('settingsPanel').hidden = !open;
+    const t = document.getElementById('settingsToggle');
+    t.setAttribute('aria-expanded', String(open));
+    t.textContent = '⚙ 固定費・貯金・使っていい金額を設定する ' + (open ? '▴' : '▾');
+  }
+  function settingsIsEmpty(){
+    return settings.allowance === 0 && settings.savings === 0 && settings.fixedCosts.length === 0;
+  }
+
   function renderSettings(){
     document.getElementById('allowanceInput').value = settings.allowance || '';
     document.getElementById('savingsInput').value = settings.savings || '';
@@ -846,6 +892,9 @@
       settings.savings = Math.max(0, parseInt(savingsInput.value, 10) || 0);
       saveSettings();
       refreshMoney();
+    });
+    document.getElementById('settingsToggle').addEventListener('click', () => {
+      setSettingsOpen(document.getElementById('settingsPanel').hidden);
     });
     document.getElementById('applySuggestBtn').addEventListener('click', () => {
       const ym = state.selectedMonth || currentYm();
@@ -1085,10 +1134,11 @@
     Object.keys(monthGroups).sort().reverse().forEach(ym => {
       const { income, expense, fixed } = monthTotals(ym);
       const monthDiv = document.createElement('div');
-      monthDiv.className = 'month-group';
+      const isCollapsed = collapsedMonths.has(ym);
+      monthDiv.className = 'month-group' + (isCollapsed ? ' collapsed' : '');
       monthDiv.innerHTML = `
-        <div class="month-header">
-          <span class="month-title">${fmtMonthLabel(ym)}</span>
+        <div class="month-header" role="button" tabindex="0" aria-expanded="${!isCollapsed}">
+          <span class="month-title"><span class="chev">▾</span>${fmtMonthLabel(ym)}<span class="month-count">${monthGroups[ym].length}件</span></span>
           <span class="month-totals">
             <span class="mi">+${fmtYen(income)}</span>
             <span class="me">-${fmtYen(expense + fixed)}</span>
@@ -1123,6 +1173,17 @@
         monthDiv.appendChild(dayDiv);
       });
 
+      const header = monthDiv.querySelector('.month-header');
+      const toggleMonth = () => {
+        const nowCollapsed = monthDiv.classList.toggle('collapsed');
+        header.setAttribute('aria-expanded', String(!nowCollapsed));
+        if(nowCollapsed) collapsedMonths.add(ym); else collapsedMonths.delete(ym);
+        saveCollapsed();
+      };
+      header.addEventListener('click', toggleMonth);
+      header.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleMonth(); }
+      });
       list.appendChild(monthDiv);
     });
 
@@ -1281,8 +1342,10 @@
 
   loadEntries();
   loadSettings();
+  loadCollapsed();
   setType('expense');
   renderSettings();
+  setSettingsOpen(settingsIsEmpty());
   populateMonthSelect();
   renderLedger();
   renderSummary();
