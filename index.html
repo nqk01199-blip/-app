@@ -199,6 +199,7 @@
   }
   .month-header .month-totals .mi{ color:#9fc3e0; }
   .month-header .month-totals .me{ color:#e2a3a3; }
+  .month-header .month-totals .mx{ opacity:.65; }
 
   /* Budget */
   .budget-card{
@@ -277,6 +278,10 @@
     padding:0 16px; border:1.5px solid var(--ink); background: var(--ink); color: var(--paper);
     border-radius:2px; font-family:"Noto Sans JP", sans-serif; font-weight:600; font-size:13px; cursor:pointer;
   }
+
+  .fixed-switch{ display:flex; align-items:center; gap:8px; font-size:12px; color: var(--ink-soft); margin-bottom:14px; cursor:pointer; }
+  .fixed-switch input{ width:auto; accent-color: var(--beni); }
+  .fixed-switch[hidden]{ display:none; }
 
   /* Settings toggle */
   .settings-toggle{
@@ -379,6 +384,11 @@
     font-family:"JetBrains Mono", monospace;
     font-weight:700;
     font-size: 18px;
+  }
+  .summary .cell .sub{
+    font-family:"JetBrains Mono", monospace;
+    font-size:10px; color: var(--ink-soft);
+    margin-top:4px; line-height:1.4;
   }
   .summary .income .value{ color: var(--indigo); }
   .summary .expense .value{ color: var(--beni); }
@@ -617,6 +627,7 @@
     <div class="cell expense">
       <div class="label" id="labelExpense">支出</div>
       <div class="value" id="sumExpense">¥0</div>
+      <div class="sub" id="sumExpenseSub"></div>
     </div>
     <div class="cell balance">
       <div class="label">残高（貯金後）</div>
@@ -710,6 +721,9 @@
       <button type="button" id="btnBreakdownExpense" class="active expense">支出</button>
       <button type="button" id="btnBreakdownIncome" class="income">収入</button>
     </div>
+    <label class="fixed-switch" id="fixedSwitchWrap">
+      <input type="checkbox" id="breakdownFixed" checked> 固定費を含める
+    </label>
     <div id="catBreakdown"></div>
   </div>
 
@@ -751,7 +765,8 @@
     category: CATEGORIES.expense[0],
     entries: [],
     selectedMonth: null,
-    breakdownType: 'expense'
+    breakdownType: 'expense',
+    breakdownFixed: true
   };
 
   // ---- Collapsed months (per-month, remembered) ----
@@ -1055,6 +1070,7 @@
     document.getElementById('labelExpense').textContent = (isCurrent ? '今月' : fmtMonthLabel(ym)) + 'の支出（固定費込み）';
     document.getElementById('sumIncome').textContent = fmtYen(income);
     document.getElementById('sumExpense').textContent = fmtYen(expense + fixed);
+    document.getElementById('sumExpenseSub').textContent = '固定費抜き ' + fmtYen(expense);
     document.getElementById('sumBalance').textContent = fmtYen(income - expense - fixed - savings);
     renderBudget(income, expense, fixed, savings);
   }
@@ -1074,7 +1090,13 @@
     renderCategoryBreakdown();
   });
 
+  document.getElementById('breakdownFixed').addEventListener('change', (e) => {
+    state.breakdownFixed = e.target.checked;
+    renderCategoryBreakdown();
+  });
+
   function renderCategoryBreakdown(){
+    document.getElementById('fixedSwitchWrap').hidden = (state.breakdownType !== 'expense');
     const container = document.getElementById('catBreakdown');
     const ym = state.selectedMonth || currentYm();
     const type = state.breakdownType;
@@ -1086,7 +1108,7 @@
         grandTotal += e.amount;
       }
     });
-    if(type === 'expense' && fixedTotal() > 0){
+    if(type === 'expense' && state.breakdownFixed && fixedTotal() > 0){
       totals['固定費'] = (totals['固定費'] || 0) + fixedTotal();
       grandTotal += fixedTotal();
     }
@@ -1142,6 +1164,7 @@
           <span class="month-totals">
             <span class="mi">+${fmtYen(income)}</span>
             <span class="me">-${fmtYen(expense + fixed)}</span>
+            <span class="mx">抜き ${fmtYen(expense)}</span>
           </span>
         </div>
       `;
